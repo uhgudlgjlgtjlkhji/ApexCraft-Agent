@@ -4,7 +4,8 @@ from math import dist
 
 
 class SimulationWorld:
-    def __init__(self, *, size=32, capacity=36*64):
+    def __init__(self, *, size=32, capacity=36*64, world_id="simulation"):
+        self.world_id = world_id
         self.size, self.capacity = size, capacity
         self.position = (0, 0, 0)
         self.blocks = {}

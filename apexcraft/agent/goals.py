@@ -10,6 +10,7 @@ from apexcraft.inventory.recipes import DependencyResolver, standard_catalog
 from apexcraft.navigation.movement import MoveAction
 from apexcraft.planning.goals import parse_goal
 from apexcraft.survival.manager import SurvivalManager
+from apexcraft.memory.store import WorldKnowledge
 
 
 @dataclass(frozen=True)
@@ -35,6 +36,13 @@ class GoalManager:
         self.completed_steps = 0
         self.survival = SurvivalManager(driver)
         self.safety_task = None
+        self.memory = WorldKnowledge(driver.world_id)
+
+    def checkpoint(self, path):
+        self.memory.save(path,self)
+
+    def restore(self, path):
+        self.memory.restore(path,self)
 
     def _status(self, status, reason=None):
         self.status, self.reason = status, reason
@@ -94,6 +102,19 @@ class GoalManager:
         if self.status != 'RUNNING':
             return
         snapshot = self.world.snapshot
+        # The simulation supplies its fully observed finite map. A live adapter must
+        # provide targeted observations instead of treating unknown chunks as air.
+        known = set(self.memory.resources) | set(self.memory.structures) | set(self.memory.hazards)
+        for key in known:
+            position = tuple(map(int,key.split(',')))
+            if position not in self.driver.blocks:
+                self.memory.observe(position,None,snapshot.version)
+        for position,block in self.driver.blocks.items():
+            key = ','.join(map(str,position))
+            old = (self.memory.resources.get(key) or self.memory.structures.get(key)
+                   or self.memory.hazards.get(key))
+            if not old or old['block'] != block:
+                self.memory.observe(position,block,snapshot.version)
         if self.safety_task and self.safety_task.status in TERMINAL | {TaskStatus.BLOCKED}:
             if self.safety_task.status != TaskStatus.SUCCESS:
                 self.controller.stop()
