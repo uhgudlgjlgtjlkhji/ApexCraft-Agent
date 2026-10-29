@@ -33,7 +33,8 @@ class SimulationWorld:
 
     def traversable(self, p):
         return (len(p) == 3 and p[1] == 0 and -self.size <= p[0] <= self.size
-                and -self.size <= p[2] <= self.size and p not in self.blocks)
+                and -self.size <= p[2] <= self.size
+                and self.blocks.get(p) in {None,'door','torch'})
 
     def adjacent(self, a, b):
         return sum(abs(x-y) for x, y in zip(a, b)) == 1
@@ -53,7 +54,7 @@ class SimulationWorld:
         self.inputs.clear()
 
     def reachable(self, position):
-        return dist(self.position, position) <= 1.5
+        return dist(self.position, position) <= 4.5
 
     def _interaction(self):
         if self.tick_count - self.last_interaction < self.interaction_interval:

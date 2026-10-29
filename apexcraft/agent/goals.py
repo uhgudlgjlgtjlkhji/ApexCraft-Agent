@@ -1,5 +1,7 @@
 """One observed, verified step at a time; plans are regenerated after each step."""
 from dataclasses import dataclass
+from collections import Counter
+from math import dist
 from hashlib import sha256
 from apexcraft.actions.acquisition import CollectResourceAction
 from apexcraft.actions.interaction import InteractionAction
@@ -84,6 +86,11 @@ class GoalManager:
         for slot,item in self.goal.equipment.items():
             if self.driver.equipment.get(slot) != item:
                 requirements[item] = max(requirements.get(item,0),1)
+        missing_blocks = [(tuple(p),item) for p,item in self.goal.blueprint
+                          if self.driver.blocks.get(tuple(p)) != item]
+        if missing_blocks:
+            for item,count in Counter(item for _,item in missing_blocks).items():
+                requirements[item] = requirements.get(item,0)+count
         steps = self.resolver.resolve(requirements,snapshot.inventory)
         if steps:
             step = steps[0]
@@ -94,6 +101,23 @@ class GoalManager:
             target = snapshot.inventory.get(step.item,0) + step.count*recipe.output
             return InteractionAction(lambda: self.driver.produce(recipe,step.count),
                 lambda w: w.inventory.get(step.item,0) >= target,self.driver.release_inputs)
+        if missing_blocks:
+            reachable = [(p,item) for p,item in missing_blocks if self.driver.reachable(p)
+                         and p != tuple(snapshot.position)]
+            if reachable:
+                position,item = reachable[0]
+                if position in self.driver.blocks:
+                    raise RuntimeError(f'Blueprint obstructed at {position}; refusing to destroy unknown work')
+                return InteractionAction(lambda: self.driver.place(position,item),
+                    lambda w: self.driver.blocks.get(position) == item,self.driver.release_inputs)
+            position,_ = min(missing_blocks,key=lambda pair:dist(snapshot.position,pair[0]))
+            approaches = [(x,0,z) for x in range(position[0]-3,position[0]+4)
+                          for z in range(position[2]-3,position[2]+4)
+                          if self.driver.traversable((x,0,z)) and dist((x,0,z),position) <= 4.5
+                          and (x,0,z) not in {p for p,_ in missing_blocks}]
+            if not approaches:
+                raise RuntimeError('No safe blueprint approach')
+            return MoveAction(self.driver,min(approaches,key=lambda p:dist(snapshot.position,p)))
         if self.goal.target is not None:
             return MoveAction(self.driver,self.goal.target)
         raise RuntimeError('No remaining steps but goal postcondition is false')

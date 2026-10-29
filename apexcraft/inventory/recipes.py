@@ -73,6 +73,8 @@ class DependencyResolver:
 
 def standard_catalog():
     recipes = [
+        Recipe('door',3,{'planks':6},{'crafting_table':1}),
+        Recipe('torch',4,{'coal':1,'stick':1}),
         Recipe('planks',4,{'log':1}), Recipe('stick',4,{'planks':2}),
         Recipe('crafting_table',1,{'planks':4}),
         Recipe('wooden_pickaxe',1,{'planks':3,'stick':2},{'crafting_table':1}),

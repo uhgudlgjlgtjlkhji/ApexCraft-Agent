@@ -75,7 +75,7 @@ class WorldKnowledge:
         goal_data = data.get('goal')
         goal = Goal(**goal_data) if goal_data else None
         if goal and goal.target is not None:
-            goal = Goal(goal.description,goal.requirements,goal.equipment,tuple(goal.target))
+            goal = Goal(goal.description,goal.requirements,goal.equipment,tuple(goal.target),goal.blueprint)
         if data.get('replans',-1) < 0 or data.get('completed_steps',-1) < 0:
             raise ValueError('Invalid checkpoint counters')
         if goal:
