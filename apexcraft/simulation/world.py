@@ -102,3 +102,33 @@ class SimulationWorld:
         self.blocks[position] = item
         if item in {'crafting_table', 'furnace'}:
             self.stations.add(item)
+
+    def produce(self, recipe, batches=1):
+        self._interaction()
+        if batches < 1:
+            raise ValueError('Invalid batch count')
+        for item, count in recipe.requirements.items():
+            if self.inventory[item] < count:
+                raise RuntimeError(f'Missing workstation or tool: {item}')
+        for item, count in recipe.ingredients.items():
+            if self.inventory[item] < count * batches:
+                raise RuntimeError(f'Missing ingredient: {item}')
+        after = self.inventory.copy()
+        after.subtract({item: n*batches for item, n in recipe.ingredients.items()})
+        after[recipe.item] += recipe.output * batches
+        if sum(after.values()) > self.capacity:
+            raise RuntimeError('Inventory full')
+        self.inventory = after
+        if recipe.item in self.tool_levels:
+            self.durability[recipe.item] = 50
+
+    def equip(self, item, slot):
+        self._interaction()
+        expected = {'head':'helmet', 'chest':'chestplate', 'legs':'leggings', 'feet':'boots'}
+        if slot not in expected or not item.endswith(expected[slot]) or self.inventory[item] < 1:
+            raise RuntimeError('Invalid or missing equipment')
+        previous = self.equipment.get(slot)
+        self.inventory[item] -= 1
+        if previous:
+            self.inventory[previous] += 1
+        self.equipment[slot] = item
