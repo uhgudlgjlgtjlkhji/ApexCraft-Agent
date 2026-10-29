@@ -1,3 +1,22 @@
+# Current validation boundary
+
+Java 25 standalone core: `scripts/test-java-core.sh` (36 explicit checks, no game
+classes or fake stubs). Full Fabric build: `./gradlew build` (**blocked at Fabric
+Maven HTTP 403**). No Minecraft client test has run and no mod JAR is validated.
+
+Python reference: `python -m unittest discover -s tests -v` (53 tests). These include
+progression to stone tools, iron armour and diamonds on finite known terrain,
+building/repair, tool breakage, disappearing resources, food/threat interruptions,
+and checkpoint restoration. No farming, Nether or live-server test is claimed.
+
+The simulation intentionally simplifies reach, tool durability (50), stack capacity,
+station access (inventory-owned abstract station), smelting (one coal per ingot),
+food healing and dimension/terrain physics. It must not be used as evidence that
+actual Minecraft crafting or survival works. Python InventoryManager has independent
+stack accounting; the simulation's capacity check uses a total-item bound.
+
+The remainder documents the original foundation setup and test methodology.
+
 # Testing
 
 From repository root with Python 3.11+:

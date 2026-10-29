@@ -1,6 +1,8 @@
-# Navigation design (Phase 2; not implemented)
+# Navigation design and validation boundary
 
-Phase 1 provides only the Action boundary and cancellation contract.
+Python now has a tested flat-grid implementation. Java core search/movement tests
+also pass. The Fabric walking adapter remains uncompiled because dependencies are
+blocked; advanced navigation below remains design work.
 
 The next vertical slice is deterministic grid movement in simulation: bounded
 incremental A*, collision checks, waypoint following, displacement detection,

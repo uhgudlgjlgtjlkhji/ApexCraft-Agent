@@ -1,3 +1,11 @@
+# Production target update
+
+ApexCraft is now a Java 25 / Fabric 26.3 client mod. See [FABRIC.md](FABRIC.md)
+for layout, authoritative version evidence, build blockers and validation boundaries.
+The Java core mirrors the verified-action architecture described below. The Fabric
+adapter is not yet compiled. The following design text documents the original
+Python reference runtime; it is not a claim that those capabilities exist in-game.
+
 # Architecture
 
 ## Scope and choice

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "apexcraft",
+  "version": "${version}",
+  "name": "ApexCraft",
+  "description": "Explicit, verified client automation for permitted Minecraft worlds.",
+  "environment": "client",
+  "license": "MIT",
+  "entrypoints": {"client": ["dev.apexcraft.client.ApexCraftClient"]},
+  "depends": {
+    "fabricloader": ">=0.20.1",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
