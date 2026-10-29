@@ -22,6 +22,7 @@ class SimulationWorld:
         self.required_levels = {'cobblestone': 1, 'raw_iron': 2, 'diamond': 3}
         self.durability = {}
         self.stations = set()
+        self.threats = set()
         self.distance_travelled = self.mined = 0
 
     def advance(self, model):
@@ -132,3 +133,15 @@ class SimulationWorld:
         if previous:
             self.inventory[previous] += 1
         self.equipment[slot] = item
+
+    def dangerous(self, position):
+        return (self.blocks.get(tuple(position)) == 'lava'
+                or any(dist(position, threat) <= 1.5 for threat in self.threats))
+
+    def eat(self):
+        self._interaction()
+        if self.inventory['food'] < 1:
+            raise RuntimeError('No food available')
+        self.inventory['food'] -= 1
+        self.hunger = min(20,self.hunger+6)
+        self.health = min(20,self.health+2)

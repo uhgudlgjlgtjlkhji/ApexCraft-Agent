@@ -9,6 +9,7 @@ from apexcraft.agent.controller import AgentController
 from apexcraft.inventory.recipes import DependencyResolver, standard_catalog
 from apexcraft.navigation.movement import MoveAction
 from apexcraft.planning.goals import parse_goal
+from apexcraft.survival.manager import SurvivalManager
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,8 @@ class GoalManager:
         self.replans = self.serial = 0
         self.failures = set()
         self.completed_steps = 0
+        self.survival = SurvivalManager(driver)
+        self.safety_task = None
 
     def _status(self, status, reason=None):
         self.status, self.reason = status, reason
@@ -42,6 +45,7 @@ class GoalManager:
         self.controller.stop()
         self.scheduler.tasks.clear()
         self.goal, self.current = parsed, None
+        self.safety_task = None
         self.replans = self.completed_steps = 0
         self.failures.clear()
         self.controller.resume()
@@ -90,6 +94,29 @@ class GoalManager:
         if self.status != 'RUNNING':
             return
         snapshot = self.world.snapshot
+        if self.safety_task and self.safety_task.status in TERMINAL | {TaskStatus.BLOCKED}:
+            if self.safety_task.status != TaskStatus.SUCCESS:
+                self.controller.stop()
+                self._status('BLOCKED',f'Survival failed: {self.safety_task.failure_reason}')
+                return
+            self.scheduler.tasks.remove(self.safety_task)
+            self.safety_task = None
+        if self.safety_task is None:
+            try:
+                safety = self.survival.action(snapshot)
+            except RuntimeError as error:
+                self.controller.stop()
+                self._status('BLOCKED',str(error))
+                return
+            if safety:
+                action, priority = safety
+                self.serial += 1
+                self.safety_task = Task(f'survival-{self.serial}',action,self.events,
+                                        priority=priority,max_ticks=1000)
+                self.scheduler.submit(self.safety_task)
+        if self.safety_task:
+            self.controller.tick()
+            return
         if self.goal.verify(snapshot,self.driver):
             self.controller.stop()
             self._status('SUCCESS')
