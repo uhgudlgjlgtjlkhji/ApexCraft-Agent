@@ -48,14 +48,16 @@ public final class ClientIntegrationTests implements FabricClientGameTest {
             // craft the pickaxe via menu clicks, and inspect the resulting inventory.
             server.runCommand("clear @p");
             server.runCommand("give @p minecraft:raw_iron 3");
-            server.runCommand("give @p minecraft:coal 1");
-            server.runCommand("give @p minecraft:stick 2");
-            server.runCommand("give @p minecraft:furnace 1");
-            server.runCommand("give @p minecraft:crafting_table 1");
-            server.runCommand("setblock 8 81 0 minecraft:diamond_ore");
-            context.waitFor(mc -> driver.observe().inventory().getOrDefault("raw_iron",0)==3
-                && mc.level.getBlockState(new BlockPos(8,81,0)).is(Blocks.DIAMOND_ORE));
-            execute(context,driver,new ObjectiveAction(driver,"diamond",1),2400);
+            context.waitFor(mc -> driver.observe().inventory().getOrDefault("raw_iron",0)==3);
+            execute(context,driver,new ObjectiveAction(driver,"diamond",1),2400,() -> {
+                // Deliberately deliver remaining prerequisites after acquisition starts.
+                // The planner must discard its obsolete log/fuel acquisition step.
+                server.runCommand("give @p minecraft:coal 1");
+                server.runCommand("give @p minecraft:stick 2");
+                server.runCommand("give @p minecraft:furnace 1");
+                server.runCommand("give @p minecraft:crafting_table 1");
+                server.runCommand("setblock 8 81 0 minecraft:diamond_ore");
+            });
             context.runOnClient(mc -> {
                 if (driver.observe().inventory().getOrDefault("iron_pickaxe",0)<1)
                     throw new AssertionError("Diamond goal failed to retain the iron pickaxe it crafted");
@@ -87,9 +89,13 @@ public final class ClientIntegrationTests implements FabricClientGameTest {
         }
     }
     private void execute(ClientGameTestContext context,MinecraftDriver driver,Action action,int limit) {
+        execute(context,driver,action,limit,null);
+    }
+    private void execute(ClientGameTestContext context,MinecraftDriver driver,Action action,int limit,Runnable delayedDelivery) {
         context.runOnClient(mc -> action.start(new Cancellation()));
         try {
             for (int tick=0;tick<limit;tick++) {
+                if (tick==20 && delayedDelivery!=null) delayedDelivery.run();
                 boolean done=context.computeOnClient(mc -> {
                     Observation observation=driver.observe();action.tick(observation);
                     return action.complete() && action.verify(observation);
