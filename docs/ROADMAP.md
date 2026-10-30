@@ -5,21 +5,21 @@ are reference/simulation slices, not completed Minecraft features.
 
 | Phase | Python reference | Java/Fabric target |
 | --- | --- | --- |
-| 1 Foundation | Tested | Core compiled/tested; client lifecycle unvalidated |
-| 2 Navigation | Flat-grid detours/recovery tested | Core tested; walking adapter uncompiled |
-| 3 Interaction | Finite-world mining/place/collect tested | Collect core tested; mining adapter uncompiled |
+| 1 Foundation | Tested | Core compiled/tested; client compiled; lifecycle unvalidated in-game |
+| 2 Navigation | Flat-grid detours/recovery tested | Core tested; walking adapter compiled; in-game tests pending |
+| 3 Interaction | Finite-world mining/place/collect tested | Collect core tested; mining adapter compiled; in-game tests pending |
 | 4 Inventory/crafting | Ledger/recipes/equipment tested | Dependency resolver tested; live containers pending |
 | 5 Acquisition | Incremental finite sources tested | Nearby collect core tested; game integration pending |
 | 6 Autonomous planning | Stone/iron/diamond/armour goals tested | Not integrated |
-| 7 Survival | Food/escape/resume tested | Conservative pause source only, unvalidated |
+| 7 Survival | Food/escape/resume tested | Conservative pause compiled; unvalidated in-game |
 | 8 Memory | Atomic world-scoped checkpoint resume tested | Not integrated |
 | 9 Advanced goals | Declarative shelter and repair tested | Building, farming, Nether all pending |
 | 10 Optimization | No measured optimization committed | Pending live profiling |
 
-**Immediate blocker:** Fabric Maven/Mojang downloads denied by cloud network policy.
-Necessary domain additions are saved in the environment draft. The next useful
-step after settings are applied is full `./gradlew build`, then real client tests.
-Do not call the Fabric mod complete before those checks pass.
+**Build status:** GitHub Actions successfully compiles the Fabric mod and uploads
+a development JAR. Local cloud dependency downloads are still denied by network
+policy. Next: in-game walking/collection/cancellation tests, then live crafting and
+planner integration. Compilation does not complete the broader autonomous-agent goal.
 
 Each further slice must compile, run meaningful tests, handle failure and
 cancellation, receive diff review, and be committed independently. Existing

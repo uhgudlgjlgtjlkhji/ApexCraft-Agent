@@ -1,8 +1,8 @@
 # Navigation design and validation boundary
 
 Python now has a tested flat-grid implementation. Java core search/movement tests
-also pass. The Fabric walking adapter remains uncompiled because dependencies are
-blocked; advanced navigation below remains design work.
+also pass. The Fabric walking adapter compiles on GitHub Actions but has no in-game tests;
+advanced navigation below remains design work.
 
 The next vertical slice is deterministic grid movement in simulation: bounded
 incremental A*, collision checks, waypoint following, displacement detection,

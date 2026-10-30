@@ -5,10 +5,17 @@ A Fabric **client mod** targeting Minecraft **26.3**, Java **25**, Fabric Loader
 on servers where automation is permitted. No separate bot account or external
 Python process is required by the mod.
 
-**Development status: not release-ready.** The standalone Java core passes tests;
-the Fabric adapter has not compiled or run against Minecraft in this environment
-because access to `maven.fabricmc.net` is denied. There is no validated mod JAR yet.
-Do not treat the Python simulation's successful objectives as working mod features.
+**Development status: early prototype, not a complete autonomous agent.**
+GitHub Actions successfully compiled the Fabric adapter and passed the core and
+simulation checks. In-game testing is still pending. The Python simulation's
+successful objectives are not evidence that those objectives work in the mod.
+
+## Download the JAR
+
+Open the latest successful [GitHub Actions build](https://github.com/uhgudlgjlgtjlkhji/ApexCraft-Agent/actions/workflows/validate.yml)
+and download **ApexCraft-Fabric-26.3** under **Artifacts** (GitHub sign-in required).
+Extract the ZIP and install `apexcraft-0.2.0.jar` alongside Fabric API for 26.3.
+Artifacts are retained for 30 days. This is a development build, not a release.
 
 ## Build and test
 
@@ -21,9 +28,8 @@ scripts/test-java-core.sh
 
 Set `JAVA_HOME` if Java 25 is not the default. The Gradle wrapper verifies its
 9.8.2 distribution checksum. A successful full build should produce
-`build/libs/apexcraft-0.2.0.jar`. This filename is an expected build output,
-not a claim that the JAR has been produced. The official Fabric example currently
-uses Loom `1.19-SNAPSHOT`; the plugin is not locked to a resolved artifact yet.
+`build/libs/apexcraft-0.2.0.jar`. GitHub Actions produces this artifact. Loom is pinned to the successfully
+resolved version `1.19.3`.
 
 After a verified build, install the JAR and the matching Fabric API in the mods
 folder of a Fabric 26.3 client. No server mod is required by this client design.
@@ -41,7 +47,7 @@ The adapter registers these local commands (not server chat messages):
 **F8** is the rebindable emergency stop. Disconnect stops automation. Opening a
 screen, losing focus, low health/hunger, or entering water pauses and releases
 inputs. Starting an objective is always explicit; installing the mod never starts
-playing automatically. This adapter source is pending full build and in-game tests.
+playing automatically. This adapter compiles successfully; in-game tests remain pending.
 
 Natural-language objectives, live recursive crafting/smelting/equipping, advanced
 movement, survival escape, building, farming, and Nether progression are **not yet

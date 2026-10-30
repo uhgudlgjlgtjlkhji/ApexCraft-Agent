@@ -41,3 +41,4 @@ tasks.register('coreTest', JavaExec) {
     enableAssertions = true
 }
 check.dependsOn coreTest
+jar { from('LICENSE') }

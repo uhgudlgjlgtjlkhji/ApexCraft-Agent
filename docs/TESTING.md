@@ -1,8 +1,9 @@
 # Current validation boundary
 
 Java 25 standalone core: `scripts/test-java-core.sh` (36 explicit checks, no game
-classes or fake stubs). Full Fabric build: `./gradlew build` (**blocked at Fabric
-Maven HTTP 403**). No Minecraft client test has run and no mod JAR is validated.
+classes or fake stubs). Full Fabric build: `./gradlew build` passes on GitHub Actions, including the core
+harness; the JAR is uploaded as a development artifact. Local cloud downloads still
+receive Fabric Maven HTTP 403. No in-game Minecraft client test has run.
 
 Python reference: `python -m unittest discover -s tests -v` (53 tests). These include
 progression to stone tools, iron armour and diamonds on finite known terrain,

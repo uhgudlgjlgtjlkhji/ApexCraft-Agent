@@ -28,12 +28,16 @@ latest Mojang release across all channels.
 Java 25.0.5+8 (Temurin) downloaded from its official GitHub release and verified
 against the release SHA-256. Standalone core compile and executable checks pass.
 The Gradle wrapper distribution checksum is pinned. CI source includes the core,
-Python simulations, and a full Fabric build job; CI has not been run remotely.
+Python simulations, and a full Fabric build job. GitHub run 41000104336 passed compilation, all
+36 core checks, and the Python simulation suite and uploaded the mod artifact.
+Loom is now pinned to the resolved version 1.19.3.
 
 Full Gradle build reaches plugin resolution but receives HTTP 403 for
 `https://maven.fabricmc.net/.../1.19-SNAPSHOT/maven-metadata.xml` through the configured
-proxy. The adapter is consequently **uncompiled and untested**. No release artifact
-is provided. Do not validate it using fake Minecraft stubs or skip dependency checks.
+proxy. This restriction affects the local cloud machine. The adapter was compiled on
+GitHub Actions after fixing configuration-cache resource expansion and the 26.3
+screen/chat APIs. A development JAR is uploaded by successful workflow runs;
+no in-game behavior or release readiness is claimed.
 
 ## Cloud setup
 
@@ -51,7 +55,8 @@ Use an existing isolated checkout; do not create a worktree for routine tasks.
 
 ## Required next checks once downloads are permitted
 
-1. Run `./gradlew --no-daemon build`; resolve real 26.3 API compilation errors.
+1. Run `./gradlew --no-daemon build` locally when downloads are permitted, or use
+   the successful GitHub Actions artifact.
 2. Launch `./gradlew runClient` in a graphical environment and a disposable world.
 3. Verify walking around obstacles, a missing source, required mining tools, a full
    inventory, normal item pickup, and F8 cancellation during movement and mining.

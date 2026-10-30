@@ -45,6 +45,24 @@ jobs:
               print('::error title=Fabric build diagnostics::' + escaped)
               with open(__import__('os').environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
                   summary.write('## Fabric build diagnostics\n\n```text\n' + tail + '\n```\n')
+      - name: Verify packaged mod
+        shell: python
+        run: |
+          import hashlib, json, zipfile
+          from pathlib import Path
+          jars = [p for p in Path('build/libs').glob('apexcraft-*.jar') if not p.name.endswith('-sources.jar')]
+          assert len(jars) == 1, f'Expected one mod JAR, got {jars}'
+          jar = jars[0]
+          with zipfile.ZipFile(jar) as archive:
+              metadata = json.loads(archive.read('fabric.mod.json'))
+              assert metadata['id'] == 'apexcraft'
+              assert '${' not in metadata['version'], 'Unexpanded mod version'
+              assert 'LICENSE' in archive.namelist()
+              for entrypoint in metadata['entrypoints']['client']:
+                  assert entrypoint.replace('.', '/') + '.class' in archive.namelist(), entrypoint
+          digest = hashlib.sha256(jar.read_bytes()).hexdigest()
+          jar.with_suffix('.jar.sha256').write_text(digest + '  ' + jar.name + '\n')
+          print(f'Verified {jar.name}: {digest}')
       - name: Upload mod JAR
         uses: actions/upload-artifact@v4
         with:
@@ -52,6 +70,7 @@ jobs:
           path: |
             build/libs/apexcraft-*.jar
             !build/libs/*-sources.jar
+            build/libs/*.jar.sha256
           if-no-files-found: error
           retention-days: 30
       - name: Upload build diagnostics
