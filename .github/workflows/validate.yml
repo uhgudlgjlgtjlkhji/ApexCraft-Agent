@@ -28,6 +28,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
+          cache: gradle
       - name: Compile and test Fabric mod
         shell: bash
         run: |
@@ -46,6 +47,7 @@ jobs:
           printf 'preferredGraphicsBackend:"opengl"\n' > build/client-gametest/options.txt
           set -o pipefail
           xvfb-run -a ./gradlew --no-daemon --console=plain runClientGametest 2>&1 | tee -a build-output.log
+          grep -F 'APEXCRAFT_CLIENT_TESTS_PASSED:' build-output.log
       - name: Include Baritone corresponding source
         run: |
           curl --fail --location --retry 3 https://github.com/cabaletta/baritone/archive/refs/tags/v1.20.0.tar.gz -o build/dependencies/baritone-source-v1.20.0.tar.gz
@@ -93,7 +95,15 @@ jobs:
           from pathlib import Path
           path = Path('build-output.log')
           if path.exists():
-              tail = '\n'.join(path.read_text(errors='replace').splitlines()[-100:])
+              lines = path.read_text(errors='replace').splitlines()
+              selected = set(range(max(0, len(lines)-25), len(lines)))
+              for i, line in enumerate(lines):
+                  if any(key in line for key in ('ERROR', 'Exception', 'Caused by:', 'AssertionError', 'APEXCRAFT_CLIENT_', 'error:', 'BUILD FAILED')):
+                      selected.update(range(max(0,i-2), min(len(lines),i+14)))
+              tail = '\n'.join(lines[i] for i in sorted(selected))[-45000:]
+              crashes = list(Path('build/client-gametest/crash-reports').glob('*.txt'))
+              for crash in crashes[-1:]:
+                  tail += '\nCRASH REPORT\n' + '\n'.join(crash.read_text(errors='replace').splitlines()[:100])
               escaped = tail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
               print('::error title=Fabric build diagnostics::' + escaped)
               with open(__import__('os').environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
@@ -103,5 +113,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: fabric-build-diagnostics
-          path: build-output.log
+          path: |
+            build-output.log
+            build/client-gametest/crash-reports/
+            build/client-gametest/logs/
+
           if-no-files-found: ignore

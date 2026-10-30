@@ -93,6 +93,9 @@ public final class ProgressionTests {
         check(clicks[0]==2,"Only rising mouse edges click");check(!states.getLast(),"Mouse hold releases");
         check(Math.abs(LookSmoother.step(179,-179,12,true)-179)<=2,"Yaw wraps through shortest direction");
         check(LookSmoother.step(0,180,12,false)==12,"Visible turn bounded per tick");
+        check(GoalRequest.parse("get diamonds").equals(new GoalRequest("diamond",1)),"Natural diamond objective");
+        check(GoalRequest.parse("Collect 64 diamonds.").equals(new GoalRequest("diamond",64)),"Quantity and punctuation");
+        check(GoalRequest.parse("iron pickaxe").item().equals("iron_pickaxe"),"Tool names with spaces");
         return checks;
     }
 }

@@ -32,6 +32,7 @@ public final class ClientIntegrationTests implements FabricClientGameTest {
                     || !mc.level.getBlockState(new BlockPos(2,81,0)).is(Blocks.TALL_GRASS))
                     throw new AssertionError("Walking must pass through grass without trying to mine it");
             });
+            System.out.println("APEXCRAFT_CLIENT_STAGE: grass walk passed");
             server.runCommand("give @p minecraft:iron_pickaxe");
             server.runCommand("setblock 6 81 0 minecraft:diamond_ore");
             context.waitFor(mc -> mc.level.getBlockState(new BlockPos(6,81,0)).is(Blocks.DIAMOND_ORE));
@@ -40,6 +41,7 @@ public final class ClientIntegrationTests implements FabricClientGameTest {
                 if (mc.options.keyAttack.isDown() || MouseMiningInput.owned())
                     throw new AssertionError("Mining did not release normal mouse input");
             });
+            System.out.println("APEXCRAFT_CLIENT_STAGE: mouse diamond mining passed");
             // A real missing-pickaxe goal: smelt raw iron, place/open workstations,
             // craft the pickaxe via menu clicks, and inspect the resulting inventory.
             server.runCommand("clear @p");

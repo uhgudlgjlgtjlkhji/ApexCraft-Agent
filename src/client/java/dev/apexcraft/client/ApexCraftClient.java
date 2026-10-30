@@ -37,6 +37,11 @@ public final class ApexCraftClient implements ClientModInitializer {
                     try { return command(StringArgumentType.getString(c,"command")); }
                     catch (IllegalArgumentException | IllegalStateException error) { return reply(error.getMessage()); }
                 }))));
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((mc,screen,width,height) ->
+            net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents.allowKeyPress(screen).register((shown,event) -> {
+                if (stop.matches(event)) { stop();return false; }
+                return true;
+            }));
         ClientPlayConnectionEvents.DISCONNECT.register((listener,mc) -> stop());
         ClientTickEvents.END_CLIENT_TICK.register(mc -> {
             while (stop.consumeClick()) stop();
@@ -105,15 +110,9 @@ public final class ApexCraftClient implements ClientModInitializer {
                 submit(new ObjectiveAction(driver,item,Integer.parseInt(words[2])),"collect "+item);
             }
             case "goal", "get", "craft" -> {
-                String text=command.substring(words[0].length()).trim().toLowerCase(Locale.ROOT).replace('.', ' ');
-                text=text.replaceFirst("^(get|obtain|collect|craft)\\s+", "").trim();
-                String[] goal=text.split("\\s+");
-                int amount=1;int first=0;
-                if (goal.length>1 && goal[0].matches("[0-9]+")) { amount=Integer.parseInt(goal[0]);first=1; }
-                String item=String.join("_",java.util.Arrays.copyOfRange(goal,first,goal.length));
-                if (item.equals("diamonds")) item="diamond";
-                item=ProgressionCatalog.canonical(item);
-                submit(new ObjectiveAction(driver,item,amount),"obtain "+amount+" "+item);
+                GoalRequest request=GoalRequest.parse(command.substring(words[0].length()));
+                submit(new ObjectiveAction(driver,request.item(),request.amount()),
+                    "obtain "+request.amount()+" "+request.item());
             }
             default -> throw new IllegalArgumentException("Available: goal/get, goto, collect, craft, stop, pause, resume, status, tasks, inventory, debug");
         }
