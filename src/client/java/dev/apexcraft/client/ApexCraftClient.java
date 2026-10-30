@@ -43,7 +43,7 @@ public final class ApexCraftClient implements ClientModInitializer {
             if (current==null || current.terminal() || current.status()==Task.Status.BLOCKED || paused) return;
             if (mc.player==null || mc.level==null || mc.level!=activeLevel) { stop(); return; }
             // GUI/focus changes always release controls; resumption is explicit.
-            if (mc.screen!=null || !mc.isWindowActive()) { scheduler.pause(); paused=true; return; }
+            if (mc.gui.screen()!=null || !mc.isWindowActive()) { scheduler.pause(); paused=true; return; }
             try {
                 Observation observation=driver.observe();
                 if (observation.health()<6 || observation.hunger()<6 || mc.player.isInWater()) {
@@ -68,7 +68,7 @@ public final class ApexCraftClient implements ClientModInitializer {
     }
     private int reply(String text) {
         var player=Minecraft.getInstance().player;
-        if (player!=null) player.displayClientMessage(Component.literal("[ApexCraft] "+text),false);
+        if (player!=null) Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(Component.literal("[ApexCraft] "+text));
         return 1;
     }
     private void submit(Action action,String description) {
