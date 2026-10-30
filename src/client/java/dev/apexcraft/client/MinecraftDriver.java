@@ -61,7 +61,7 @@ public final class MinecraftDriver implements ObjectiveDriver {
     public Action smelt(int amount) { return new CraftingAction(this,"iron_ingot",amount); }
     public void decision(String message) { LoggerFactory.getLogger("apexcraft").info("[PLAN] {}",message); }
     public void releaseInputs() {
-        session.stop(); MouseMiningInput.set(false);
+        session.stop(); MouseMiningInput.release();
         client.options.keyUp.setDown(false); client.options.keyDown.setDown(false);
         client.options.keyLeft.setDown(false); client.options.keyRight.setDown(false);
         client.options.keyJump.setDown(false); client.options.keySprint.setDown(false);
@@ -130,11 +130,24 @@ public final class MinecraftDriver implements ObjectiveDriver {
             new baritone.api.pathing.goals.GoalNear(target,2)),
             w -> client.player.getEyePosition().distanceTo(Vec3.atCenterOf(target))<4.2);
     }
+    private boolean aimForInteraction(Vec3 point,BlockPos intended,Direction face) {
+        if (!face(point) || !(client.hitResult instanceof BlockHitResult hit)) {
+            MouseMiningInput.release();return false;
+        }
+        if (hit.getBlockPos().equals(intended) && (face==null || hit.getDirection()==face)) {
+            MouseMiningInput.release();return true;
+        }
+        // Plants have a selection outline even though their collision shape is empty.
+        // Clear only harmless vegetation that actually blocks this interaction ray.
+        String obstruction=blockId(hit.getBlockPos());
+        boolean grass=Set.of("short_grass","tall_grass","fern","large_fern").contains(obstruction);
+        if (grass) MouseMiningInput.set(true); else MouseMiningInput.release();
+        return false;
+    }
     boolean prepareStation(String item,int tick) {
         BlockPos station=station(item);
         if (station!=null) {
-            if (face(Vec3.atCenterOf(station)) && client.hitResult instanceof BlockHitResult hit
-                && hit.getBlockPos().equals(station) && tick%8==0) {
+            if (aimForInteraction(Vec3.atCenterOf(station),station,null) && tick%8==0) {
                 expectedMenu=item; openRequestAge=0; clickUse();
             }
             return false;
@@ -156,8 +169,7 @@ public final class MinecraftDriver implements ObjectiveDriver {
             if (!client.level.getBlockState(target).canBeReplaced()
                 || !client.level.getBlockState(floor).isFaceSturdy(client.level,floor,Direction.UP)
                 || !client.level.getBlockState(floor).getFluidState().isEmpty()) continue;
-            if (face(Vec3.atCenterOf(floor).add(0,0.5,0)) && client.hitResult instanceof BlockHitResult hit
-                && hit.getBlockPos().equals(floor) && hit.getDirection()==Direction.UP && tick%8==0) clickUse();
+            if (aimForInteraction(Vec3.atCenterOf(floor).add(0,0.5,0),floor,Direction.UP) && tick%8==0) clickUse();
             return false;
         }
         throw new IllegalStateException("No safe adjacent workstation placement site");

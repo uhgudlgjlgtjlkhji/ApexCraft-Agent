@@ -14,11 +14,12 @@ public final class MouseMiningInput {
     private MouseMiningInput() {}
     public static boolean owned() { return owned; }
     public static void own(boolean value) {
-        if (!value) {
-            set(false);
-            while (Minecraft.getInstance().options.keyAttack.consumeClick()) { /* discard this task's queued press */ }
-        }
+        if (!value) release();
         owned=value;
+    }
+    public static void release() {
+        set(false);
+        while (Minecraft.getInstance().options.keyAttack.consumeClick()) { /* discard this task's queued press */ }
     }
     public static void set(boolean requested) {
         Minecraft mc=Minecraft.getInstance();
