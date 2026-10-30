@@ -18,6 +18,8 @@ public final class BaritoneAction implements Action {
         this.token=token; token.check(); done=false; session.start(); launch.accept(session);
     }
     public void tick(Observation world) { token.check(); done=predicate.test(world); }
+    @Override public String toString() { return "Baritone goal="+session.bot().getPathingBehavior().getGoal()
+        +" mineActive="+session.bot().getMineProcess().isActive()+" pathing="+session.bot().getPathingBehavior().isPathing(); }
     public boolean complete() { return done; }
     public boolean verify(Observation world) { return predicate.test(world); }
     public void cancel() { session.stop(); }

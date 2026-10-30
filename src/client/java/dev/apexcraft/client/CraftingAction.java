@@ -115,6 +115,7 @@ public final class CraftingAction implements Action {
             phase=1;
         }
     }
+    @Override public String toString() { return (smelting?"smelt ":"craft ")+item+" phase="+phase+" clicks="+clicks.size()+" target="+target+" travel="+travel; }
     public boolean complete() { return done; }
     public boolean verify(Observation world) { return target>=0 && world.inventory().getOrDefault(item,0)>=target; }
     public void cancel() {

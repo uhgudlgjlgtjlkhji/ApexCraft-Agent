@@ -57,6 +57,7 @@ public final class ObjectiveAction implements Action {
             driver.decision("Replanning after: "+failure.getMessage());
         }
     }
+    @Override public String toString() { return "obtain "+amount+" "+item+"; step="+step+"; stepTicks="+stepTicks+"; recoveries="+failures; }
     public boolean complete() { return done; }
     public boolean verify(Observation world) { return world.inventory().getOrDefault(item,0)>=amount; }
     public void cancel() { try { if (step!=null) step.cancel(); } finally { step=null; driver.releaseInputs(); } }

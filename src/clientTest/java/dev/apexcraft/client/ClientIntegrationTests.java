@@ -95,6 +95,12 @@ public final class ClientIntegrationTests implements FabricClientGameTest {
                     return action.complete() && action.verify(observation);
                 });
                 if (done) return;
+                if (tick%200==0) context.runOnClient(mc -> {
+                    boolean visible=baritone.api.utils.RotationUtils.reachable(driver.session.bot().getPlayerContext(),new BlockPos(8,81,0),20).isPresent();
+                    System.out.println("APEXCRAFT_CLIENT_PROGRESS: "+driver.observe()+" action="+action
+                        +" menu="+mc.player.containerMenu.getClass().getSimpleName()+" visible8="+visible
+                        +" ore8="+mc.level.getBlockState(new BlockPos(8,81,0)));
+                });
                 context.waitTick();
             }
             throw new AssertionError("Client integration action timed out: "+action.getClass().getSimpleName());

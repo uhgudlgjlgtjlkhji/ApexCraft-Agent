@@ -102,7 +102,7 @@ jobs:
               lines = path.read_text(errors='replace').splitlines()
               selected = set(range(max(0, len(lines)-20), len(lines)))
               for i, line in enumerate(lines):
-                  if len(line) < 3000 and any(key in line for key in ('ERROR', 'Exception', 'Caused by:', 'AssertionError', 'APEXCRAFT_CLIENT_', 'error:', 'BUILD FAILED')):
+                  if len(line) < 3000 and any(key in line for key in ('ERROR', 'Exception', 'Caused by:', 'AssertionError', 'APEXCRAFT_CLIENT_', '[PLAN]', 'error:', 'BUILD FAILED')):
                       selected.update(range(max(0,i-1), min(len(lines),i+8)))
               sections.append('LOG CONTEXT\n' + '\n'.join(lines[i][:500] for i in sorted(selected)))
           report = '\n\n'.join(sections)[:25000]
