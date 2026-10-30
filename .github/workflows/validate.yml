@@ -93,21 +93,25 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+          import os
           path = Path('build-output.log')
+          sections = []
+          for crash in list(Path('.').rglob('crash-*.txt'))[-2:]:
+              sections.append('CRASH REPORT ' + str(crash) + '\n' + '\n'.join(line[:500] for line in crash.read_text(errors='replace').splitlines()[:80]))
           if path.exists():
               lines = path.read_text(errors='replace').splitlines()
-              selected = set(range(max(0, len(lines)-25), len(lines)))
+              selected = set(range(max(0, len(lines)-20), len(lines)))
               for i, line in enumerate(lines):
-                  if any(key in line for key in ('ERROR', 'Exception', 'Caused by:', 'AssertionError', 'APEXCRAFT_CLIENT_', 'error:', 'BUILD FAILED')):
-                      selected.update(range(max(0,i-2), min(len(lines),i+14)))
-              tail = '\n'.join(lines[i] for i in sorted(selected))[-45000:]
-              crashes = list(Path('build/client-gametest/crash-reports').glob('*.txt'))
-              for crash in crashes[-1:]:
-                  tail += '\nCRASH REPORT\n' + '\n'.join(crash.read_text(errors='replace').splitlines()[:100])
-              escaped = tail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
-              print('::error title=Fabric build diagnostics::' + escaped)
-              with open(__import__('os').environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
-                  summary.write('## Fabric build diagnostics\n\n```text\n' + tail + '\n```\n')
+                  if len(line) < 3000 and any(key in line for key in ('ERROR', 'Exception', 'Caused by:', 'AssertionError', 'APEXCRAFT_CLIENT_', 'error:', 'BUILD FAILED')):
+                      selected.update(range(max(0,i-1), min(len(lines),i+8)))
+              sections.append('LOG CONTEXT\n' + '\n'.join(lines[i][:500] for i in sorted(selected)))
+          report = '\n\n'.join(sections)[:25000]
+          for start in range(0, len(report), 2500):
+              chunk = report[start:start+2500]
+              escaped = chunk.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print('::error title=Client build diagnostics ' + str(start//2500+1) + '::' + escaped)
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write('## Diagnostics\n\n```text\n' + report + '\n```\n')
       - name: Upload build diagnostics
         if: failure()
         uses: actions/upload-artifact@v4

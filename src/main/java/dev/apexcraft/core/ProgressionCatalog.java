@@ -7,7 +7,7 @@ public final class ProgressionCatalog {
     public record Craft(String item,int output,List<String> grid,boolean table) {}
     public static final Map<String,Craft> CRAFTS=new LinkedHashMap<>();
     public static final Map<String,List<String>> SOURCES=Map.of(
-        "log",List.of("oak_log","birch_log","spruce_log","jungle_log","acacia_log","dark_oak_log","mangrove_log","cherry_log"),
+        "log",List.of("oak_log","birch_log","spruce_log","jungle_log","acacia_log","dark_oak_log","mangrove_log","cherry_log","pale_oak_log"),
         "cobblestone",List.of("stone","cobblestone"),
         "coal",List.of("coal_ore","deepslate_coal_ore"),
         "raw_iron",List.of("iron_ore","deepslate_iron_ore"),

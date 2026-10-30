@@ -26,8 +26,10 @@ public final class ObjectiveAction implements Action {
             step.cancel();step=null;
         }
         if (step==null) {
-            var plan=ProgressionCatalog.PLANNER.resolve(Map.of(item,amount),
-                ProgressionCatalog.toolsSatisfied(driver.planningInventory(world)));
+            var stock=ProgressionCatalog.toolsSatisfied(driver.planningInventory(world));
+            // Better tools satisfy dependencies, not an explicitly requested output item.
+            stock.put(item,world.inventory().getOrDefault(item,0));
+            var plan=ProgressionCatalog.PLANNER.resolve(Map.of(item,amount),stock);
             if (plan.isEmpty()) throw new IllegalStateException("No action for unmet objective");
             var next=plan.getFirst();
             resourceTool=next.kind().equals("collect")?switch(next.item()) {

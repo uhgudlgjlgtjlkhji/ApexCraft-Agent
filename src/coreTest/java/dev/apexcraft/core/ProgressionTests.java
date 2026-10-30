@@ -69,6 +69,9 @@ public final class ProgressionTests {
         var upgrade=new Driver();upgrade.inventory.put("netherite_pickaxe",1);
         run(upgrade,new ObjectiveAction(upgrade,"diamond",1));
         check(upgrade.executed.equals(List.of("collect:diamond")),"Better tool satisfies requirement");
+        var specific=new Driver();specific.inventory.put("diamond_pickaxe",1);
+        run(specific,new ObjectiveAction(specific,"iron_pickaxe",1));
+        check(specific.inventory.getOrDefault("iron_pickaxe",0)==1,"Explicit tool request creates exact item despite better tool");
         var broken=new Driver();broken.inventory.put("iron_pickaxe",1);broken.waiting=true;
         var repair=new ObjectiveAction(broken,"diamond",1);repair.start(new Cancellation());
         repair.tick(broken.observation());broken.inventory.remove("iron_pickaxe");broken.waiting=false;
