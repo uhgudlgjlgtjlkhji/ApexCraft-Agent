@@ -46,8 +46,11 @@ jobs:
           mkdir -p build/client-gametest
           printf 'preferredGraphicsBackend:"opengl"\n' > build/client-gametest/options.txt
           set -o pipefail
-          xvfb-run -a ./gradlew --no-daemon --console=plain runClientGametest 2>&1 | tee -a build-output.log
-          grep -F 'APEXCRAFT_CLIENT_TESTS_PASSED:' build-output.log
+          for trial in 1 2; do
+            echo "ApexCraft client validation trial $trial" | tee -a build-output.log
+            xvfb-run -a ./gradlew --no-daemon --console=plain runClientGametest 2>&1 | tee -a build-output.log
+          done
+          test "$(grep -c 'APEXCRAFT_CLIENT_TESTS_PASSED:' build-output.log)" -eq 2
       - name: Include Baritone corresponding source
         run: |
           curl --fail --location --retry 3 https://github.com/cabaletta/baritone/archive/refs/tags/v1.20.0.tar.gz -o build/dependencies/baritone-source-v1.20.0.tar.gz
