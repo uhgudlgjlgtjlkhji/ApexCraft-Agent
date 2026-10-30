@@ -8,14 +8,14 @@ public final class ProgressionTests {
     private static final class Driver implements ObjectiveDriver {
         Map<String,Integer> inventory=new HashMap<>();
         List<String> executed=new ArrayList<>();
-        boolean allowed=true,waiting,cancelled;
+        boolean allowed=true,waiting,cancelled,waitingForLog;
         int ticks;
         public Map<String,Integer> planningInventory(Observation world) { return world.inventory(); }
         Action action(Runnable operation,String name) {
             return new Action() {
                 boolean done;
                 public void start(Cancellation token) { token.check(); }
-                public void tick(Observation world) { if (!waiting && !done) { operation.run();executed.add(name);done=true; } }
+                public void tick(Observation world) { if (!waiting && !(waitingForLog && name.equals("collect:log")) && !done) { operation.run();executed.add(name);done=true; } }
                 public boolean complete() { return done; }
                 public boolean verify(Observation world) { return done; }
                 public void cancel() { cancelled=true; }
@@ -77,6 +77,12 @@ public final class ProgressionTests {
         repair.tick(broken.observation());broken.inventory.remove("iron_pickaxe");broken.waiting=false;
         for (int i=0;i<1000 && !repair.complete();i++) repair.tick(broken.observation());
         check(repair.complete() && broken.executed.contains("craft:iron_pickaxe"),"Broken pickaxe causes prerequisite replan");
+        var updated=new Driver();updated.waitingForLog=true;
+        var dynamic=new ObjectiveAction(updated,"diamond",1);dynamic.start(new Cancellation());
+        dynamic.tick(updated.observation());
+        updated.inventory.put("iron_pickaxe",1);
+        for (int i=0;i<30 && !dynamic.complete();i++) dynamic.tick(updated.observation());
+        check(dynamic.complete() && !updated.executed.contains("collect:log"),"Newly available pickaxe supersedes an obsolete log acquisition");
         var ready=new Driver();ready.inventory.put("diamond",4);
         run(ready,new ObjectiveAction(ready,"diamond",3));check(ready.executed.isEmpty(),"Do not overcollect");
         var cancelled=new Driver();cancelled.waiting=true;
