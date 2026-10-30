@@ -42,6 +42,7 @@ public final class ApexCraftClient implements ClientModInitializer {
                 if (stop.matches(event)) { stop();return false; }
                 return true;
             }));
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> stop());
         ClientPlayConnectionEvents.DISCONNECT.register((listener,mc) -> stop());
         ClientTickEvents.END_CLIENT_TICK.register(mc -> {
             while (stop.consumeClick()) stop();

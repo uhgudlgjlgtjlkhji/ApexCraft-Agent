@@ -2,6 +2,11 @@
   "required": true,
   "package": "dev.apexcraft.client.mixin",
   "compatibilityLevel": "JAVA_25",
-  "client": ["BaritoneMouseInputMixin"],
-  "injectors": {"defaultRequire": 1}
+  "client": [
+    "BaritoneMouseInputMixin",
+    "MinecraftShutdownMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

@@ -47,3 +47,21 @@ A simulated high-priority task validates interruption, not threat recognition.
 Add regressions for discovered defects. Keep skipped, failed, and unrun checks
 separate from passing tests. A future live integration suite must pin game and
 adapter versions and run only against worlds where automation is permitted.
+
+## 0.3.0 live-adapter regression suite
+
+`./gradlew runClientGametest` starts the actual Fabric client and an integrated
+server using a development-only test mod. The tests build a controlled grass
+corridor, use normal mouse input to collect a diamond, and use real furnace/table
+menus to produce an iron pickaxe. The production JAR excludes this test mod.
+
+The GitHub workflow runs this under Xvfb with software graphics, requires an
+explicit completion marker, and gates the downloadable artifact on success.
+A runtime test that crashes or times out is a failed run; the standalone core
+checks and Python reference tests cannot substitute for it. See the Actions run
+for current results while the 0.3.0 implementation is being validated.
+
+Core tests additionally cover mouse press/hold/release edges, goal parsing, full
+resource prerequisites, existing/better pickaxes, broken tools, exact requested
+outputs, bounded failure, and cancellation. The count includes assertions within
+those scenarios, not a count of independent Minecraft worlds.

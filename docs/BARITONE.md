@@ -71,3 +71,7 @@ pickaxe, smelting/crafting an iron pickaxe through real menus, and input cleanup
 CI requires the test's completion marker, so an empty test run cannot pass. Runtime
 results must be read from the relevant Actions run; test source alone is not proof
 of a pass. A full fresh-world diamond journey is not yet a benchmarked claim.
+
+The shutdown regression test also requires Minecraft/Gradle to exit normally.
+The upstream cache workers are stopped after Minecraft closes its worlds; passing
+gameplay assertions alone does not excuse a shutdown watchdog failure.
