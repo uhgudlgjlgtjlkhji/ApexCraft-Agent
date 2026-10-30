@@ -19,7 +19,7 @@ public final class CraftingAction implements Action {
     private Cancellation token;
     private AbstractContainerMenu menu;
     private final ArrayDeque<Click> clicks=new ArrayDeque<>();
-    private int ticks,phase,target;
+    private int ticks,phase,target,menuTicks,placementTicks;
     private boolean done;
     private Action travel;
     public CraftingAction(MinecraftDriver driver,String item,int amount) {
@@ -27,13 +27,15 @@ public final class CraftingAction implements Action {
         if (!smelting && !ProgressionCatalog.CRAFTS.containsKey(item)) throw new IllegalArgumentException("Unknown recipe "+item);
     }
     public void start(Cancellation token) {
-        this.token=token;token.check();driver.releaseInputs();menu=null;ticks=phase=0;done=false;clicks.clear();target=-1;
+        this.token=token;token.check();driver.releaseInputs();menu=null;ticks=phase=menuTicks=placementTicks=0;done=false;clicks.clear();target=-1;
     }
     public void tick(Observation world) {
         token.check();ticks++;
         if (target<0) target=world.inventory().getOrDefault(item,0)+(smelting?amount:ProgressionCatalog.CRAFTS.get(item).output());
         if (verify(world)) { done=true; return; }
-        if (ticks>240*amount+600) throw new IllegalStateException("Craft/smelt timed out; inspect ingredients, inventory space and server container state");
+        if (ticks>24000) throw new IllegalStateException("Workstation travel budget exceeded");
+        if (menu!=null && ++menuTicks>240*amount+600)
+            throw new IllegalStateException("Craft/smelt timed out; inspect ingredients, inventory space and server container state");
         var mc=driver.client;
         if (travel!=null) {
             travel.tick(world);
@@ -47,6 +49,7 @@ public final class CraftingAction implements Action {
                 if (station!=null && mc.player.getEyePosition().distanceTo(net.minecraft.world.phys.Vec3.atCenterOf(station))>=4.2) {
                     travel=driver.nearStation(station);travel.start(token);return;
                 }
+                if (++placementTicks>400) throw new IllegalStateException("Workstation could not be placed or opened");
                 if (smelting && mc.player.containerMenu instanceof AbstractFurnaceMenu
                     || table && mc.player.containerMenu instanceof CraftingMenu) {
                     menu=mc.player.containerMenu;driver.ownedScreen=mc.gui.screen();
