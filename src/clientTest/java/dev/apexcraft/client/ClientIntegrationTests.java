@@ -33,6 +33,8 @@ public final class ClientIntegrationTests implements FabricClientGameTest {
                     throw new AssertionError("Walking must pass through grass without trying to mine it");
             });
             System.out.println("APEXCRAFT_CLIENT_STAGE: grass walk passed");
+            server.runCommand("fill -1 81 -1 8 83 -1 minecraft:air");
+            server.runCommand("fill -1 81 1 8 83 1 minecraft:air");
             server.runCommand("give @p minecraft:iron_pickaxe");
             server.runCommand("setblock 6 81 0 minecraft:diamond_ore");
             context.waitFor(mc -> mc.level.getBlockState(new BlockPos(6,81,0)).is(Blocks.DIAMOND_ORE));
@@ -50,13 +52,17 @@ public final class ClientIntegrationTests implements FabricClientGameTest {
             server.runCommand("give @p minecraft:stick 2");
             server.runCommand("give @p minecraft:furnace 1");
             server.runCommand("give @p minecraft:crafting_table 1");
-            context.waitFor(mc -> driver.observe().inventory().getOrDefault("raw_iron",0)==3);
-            execute(context,driver,new ObjectiveAction(driver,"iron_pickaxe",1),2400);
+            server.runCommand("setblock 8 81 0 minecraft:diamond_ore");
+            context.waitFor(mc -> driver.observe().inventory().getOrDefault("raw_iron",0)==3
+                && mc.level.getBlockState(new BlockPos(8,81,0)).is(Blocks.DIAMOND_ORE));
+            execute(context,driver,new ObjectiveAction(driver,"diamond",1),2400);
             context.runOnClient(mc -> {
+                if (driver.observe().inventory().getOrDefault("iron_pickaxe",0)<1)
+                    throw new AssertionError("Diamond goal failed to retain the iron pickaxe it crafted");
                 if (!mc.player.containerMenu.getCarried().isEmpty()) throw new AssertionError("Crafting left an item on the cursor");
             });
             MixinEnvironment.getCurrentEnvironment().audit();
-            System.out.println("APEXCRAFT_CLIENT_TESTS_PASSED: grass walking, mouse mining, iron smelting/crafting, input cleanup");
+            System.out.println("APEXCRAFT_CLIENT_TESTS_PASSED: grass walking, mouse mining, missing-pickaxe diamond objective, input cleanup");
         }
     }
     private void execute(ClientGameTestContext context,MinecraftDriver driver,Action action,int limit) {
