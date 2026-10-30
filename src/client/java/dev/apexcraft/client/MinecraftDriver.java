@@ -1,105 +1,164 @@
 package dev.apexcraft.client;
 
+import baritone.api.pathing.goals.GoalBlock;
 import dev.apexcraft.core.*;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.commands.arguments.EntityAnchorArgument;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.inventory.CraftingMenu;
+import net.minecraft.world.inventory.FurnaceMenu;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import java.util.*;
+import org.slf4j.LoggerFactory;
 
-/** Normal client inputs and interactions only; unknown chunks are impassable. */
-public final class MinecraftDriver implements ResourceDriver {
-    private final Minecraft client;
+/** Live inventory and menu adapter. Movement/mining are provided by the official Baritone dependency. */
+public final class MinecraftDriver implements ObjectiveDriver {
+    final Minecraft client;
+    final BaritoneSession session=new BaritoneSession();
     private long version;
-    private Position scanOrigin;
-    private int scanIndex;
-    private String scanItem;
-    private static final int WIDTH=17, HEIGHT=9, VOLUME=WIDTH*WIDTH*HEIGHT;
+    private final Map<String,BlockPos> stations=new HashMap<>();
+    Object ownedScreen;
+    String expectedMenu;
+    int openRequestAge;
     public MinecraftDriver(Minecraft client) { this.client=client; }
-    private static BlockPos block(Position p) { return new BlockPos(p.x(),p.y(),p.z()); }
-    private Position position() {
-        BlockPos p=client.player.blockPosition(); return new Position(p.getX(),p.getY(),p.getZ());
-    }
     public Observation observe() {
         var inventory=new HashMap<String,Integer>();
-        var slots=client.player.getInventory();
-        for (int i=0;i<slots.getContainerSize();i++) {
-            var stack=slots.getItem(i);
-            if (!stack.isEmpty()) inventory.merge(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString(),stack.getCount(),Integer::sum);
+        for (var stack:client.player.getInventory().getNonEquipmentItems()) {
+            if (!stack.isEmpty()) inventory.merge(ProgressionCatalog.canonical(
+                BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()),stack.getCount(),Integer::sum);
         }
-        return new Observation(++version,position(),client.player.getHealth(),client.player.getFoodData().getFoodLevel(),inventory);
+        var p=client.player.blockPosition();
+        return new Observation(++version,new Position(p.getX(),p.getY(),p.getZ()),
+            client.player.getHealth(),client.player.getFoodData().getFoodLevel(),inventory);
     }
-    public boolean traversable(Position p) {
-        if (client.level==null || !client.level.hasChunkAt(block(p))) return false;
-        BlockPos feet=block(p),head=feet.above(),floor=feet.below();
-        var footState=client.level.getBlockState(feet); var headState=client.level.getBlockState(head);
-        var floorState=client.level.getBlockState(floor);
-        // Walking only: no fluids, unsupported falls, doors, breaking, or bridging.
-        return footState.getCollisionShape(client.level,feet).isEmpty()
-            && headState.getCollisionShape(client.level,head).isEmpty()
-            && !floorState.getCollisionShape(client.level,floor).isEmpty()
-            && footState.getFluidState().isEmpty() && headState.getFluidState().isEmpty()
-            && floorState.getFluidState().isEmpty()
-            && !BuiltInRegistries.BLOCK.getKey(floorState.getBlock()).toString().matches(".*(magma|campfire|cactus|fire).*");
+    public Map<String,Integer> planningInventory(Observation world) {
+        var available=new HashMap<>(world.inventory());
+        for (String station:List.of("crafting_table","furnace"))
+            if (station(station)!=null) available.put(station,Math.max(1,available.getOrDefault(station,0)));
+        return available;
     }
-    public List<PathSearch.Edge> neighbors(Position p) {
-        var edges=new ArrayList<PathSearch.Edge>();
-        for (int[] d:new int[][]{{1,0},{-1,0},{0,1},{0,-1}}) {
-            Position n=p.add(d[0],0,d[1]);
-            if (n.distance(position())<=48 && traversable(n)) edges.add(new PathSearch.Edge(n,1));
-        }
-        return edges;
+    public Action movement(Position target) {
+        return new BaritoneAction(session,s -> s.bot().getCustomGoalProcess().setGoalAndPath(
+            new GoalBlock(target.x(),target.y(),target.z())),w -> w.position().equals(target));
     }
-    public void moveToward(Position target) {
-        if (!traversable(target)) { releaseInputs(); return; }
-        double dx=target.x()+0.5-client.player.getX(),dz=target.z()+0.5-client.player.getZ();
-        client.player.setYRot((float)Math.toDegrees(Math.atan2(-dx,dz)));
-        client.options.keyUp.setDown(true);
+    public Action collect(String item,int total) {
+        var targets=ProgressionCatalog.SOURCES.get(item);
+        if (targets==null) throw new IllegalArgumentException("No mining source for "+item);
+        return new BaritoneAction(session,s -> {
+            int level=switch(item) { case "diamond" -> -54; case "raw_iron" -> 16;
+                default -> client.player.blockPosition().getY(); };
+            s.miningLevel(level);
+            s.bot().getMineProcess().mineByName(total,targets.toArray(String[]::new));
+        },w -> w.inventory().getOrDefault(item,0)>=total);
     }
+    public Action craft(String item) { return new CraftingAction(this,item,1); }
+    public Action smelt(int amount) { return new CraftingAction(this,"iron_ingot",amount); }
+    public void decision(String message) { LoggerFactory.getLogger("apexcraft").info("[PLAN] {}",message); }
     public void releaseInputs() {
+        session.stop(); MouseMiningInput.set(false);
         client.options.keyUp.setDown(false); client.options.keyDown.setDown(false);
         client.options.keyLeft.setDown(false); client.options.keyRight.setDown(false);
         client.options.keyJump.setDown(false); client.options.keySprint.setDown(false);
-        client.options.keyAttack.setDown(false); client.options.keyUse.setDown(false);
-        if (client.gameMode!=null) client.gameMode.stopDestroyBlock();
+        client.options.keyUse.setDown(false);
     }
-    public void beginScan(String item) { scanOrigin=position(); scanItem=item; scanIndex=0; }
-    public Optional<Position> scan(int budget) {
-        for (int i=0;i<budget && scanIndex<VOLUME;i++,scanIndex++) {
-            int x=scanIndex%WIDTH-8,z=(scanIndex/WIDTH)%WIDTH-8,y=scanIndex/(WIDTH*WIDTH)-4;
-            Position p=scanOrigin.add(x,y,z);
-            if (sourcePresent(p,scanItem)) { scanIndex++; return Optional.of(p); }
+    public boolean ownsScreen() {
+        Object screen=client.gui.screen();
+        if (screen==null) return false;
+        if (screen==ownedScreen) return true;
+        if (expectedMenu!=null && openRequestAge++<40 && (
+            expectedMenu.equals("crafting_table") && client.player.containerMenu instanceof CraftingMenu
+            || expectedMenu.equals("furnace") && client.player.containerMenu instanceof FurnaceMenu)) {
+            ownedScreen=screen;
+            return true;
         }
-        return Optional.empty();
+        return false;
     }
-    public boolean scanComplete() { return scanIndex>=VOLUME; }
-    public boolean sourcePresent(Position p,String item) {
-        return client.level.hasChunkAt(block(p)) && BuiltInRegistries.ITEM.getKey(
-            client.level.getBlockState(block(p)).getBlock().asItem()).toString().equals(item);
+    void closeOwnedScreen() {
+        try {
+            if (client.gui.screen()!=null && ownsScreen()) client.gui.screen().onClose();
+        } finally { ownedScreen=null; expectedMenu=null; }
     }
-    public boolean canReach(Position p) {
-        return client.player.getEyePosition().distanceTo(Vec3.atCenterOf(block(p)))<=4;
-    }
-    public void mine(Position p) {
-        var state=client.level.getBlockState(block(p));
-        if (state.requiresCorrectToolForDrops() && !client.player.getMainHandItem().isCorrectToolForDrops(state))
-            throw new IllegalStateException("Select a suitable mining tool in the hotbar");
-        if (state.getDestroySpeed(client.level,block(p))<0 || block(p).equals(client.player.blockPosition().below()))
-            throw new IllegalStateException("Refusing unbreakable block or supporting floor");
-        client.player.lookAt(EntityAnchorArgument.Anchor.EYES,Vec3.atCenterOf(block(p)));
-        // Use the ordinary game-mode controller; never spoof packets or bypass server validation.
-        if (client.hitResult instanceof BlockHitResult hit && hit.getBlockPos().equals(block(p)))
-            client.gameMode.continueDestroyBlock(block(p),hit.getDirection());
-    }
-    public Position approach(Position source) {
-        var candidates=new ArrayList<Position>();
-        for (int x=-2;x<=2;x++) for (int z=-2;z<=2;z++) {
-            Position p=new Position(source.x()+x,position().y(),source.z()+z);
-            if (traversable(p) && p.distance(source)<=3) candidates.add(p);
+    BlockPos station(String item) {
+        BlockPos known=stations.get(item);
+        if (known!=null && client.level.hasChunkAt(known) && blockId(known).equals(item)
+            ) return known;
+        stations.remove(item);
+        BlockPos center=client.player.blockPosition();
+        for (BlockPos pos:BlockPos.betweenClosed(center.offset(-3,-2,-3),center.offset(3,2,3))) {
+            if (client.level.hasChunkAt(pos) && blockId(pos).equals(item)
+                && client.player.getEyePosition().distanceTo(Vec3.atCenterOf(pos))<4.4) {
+                stations.put(item,pos.immutable()); return pos.immutable();
+            }
         }
-        return candidates.stream().min(Comparator.comparingDouble(p -> p.distance(position())))
-            .orElseThrow(() -> new IllegalStateException("No safe observed source approach"));
+        return null;
+    }
+    private String blockId(BlockPos pos) {
+        return BuiltInRegistries.BLOCK.getKey(client.level.getBlockState(pos).getBlock()).toString().replace("minecraft:","");
+    }
+    boolean face(Vec3 point) {
+        Vec3 delta=point.subtract(client.player.getEyePosition());
+        float yaw=(float)Math.toDegrees(Math.atan2(-delta.x,delta.z));
+        float pitch=(float)-Math.toDegrees(Math.atan2(delta.y,Math.hypot(delta.x,delta.z)));
+        client.player.setYRot(LookSmoother.step(client.player.getYRot(),yaw,12,true));
+        client.player.setXRot(LookSmoother.step(client.player.getXRot(),pitch,10,false));
+        double yawError=(yaw-client.player.getYRot()+540)%360-180;
+        return Math.abs(yawError)<3 && Math.abs(pitch-client.player.getXRot())<3;
+    }
+    void clickUse() { KeyMapping.click(KeyMappingHelper.getBoundKeyOf(client.options.keyUse)); }
+    void click(AbstractContainerMenu menu,int slot,int button,ContainerInput type) {
+        if (client.player.containerMenu!=menu) throw new IllegalStateException("Container changed during crafting");
+        client.gameMode.handleContainerInput(menu.containerId,slot,button,type,client.player);
+    }
+    int inventorySlot(AbstractContainerMenu menu,String item,Map<Integer,Integer> reserved) {
+        for (int i=0;i<menu.slots.size();i++) {
+            var slot=menu.getSlot(i); var stack=slot.getItem();
+            if (slot.container==client.player.getInventory() && !stack.isEmpty()
+                && ProgressionCatalog.canonical(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()).equals(item)
+                && stack.getCount()>reserved.getOrDefault(i,0)) return i;
+        }
+        throw new IllegalStateException("Missing inventory ingredient: "+item);
+    }
+    Action nearStation(BlockPos target) {
+        return new BaritoneAction(session,s -> s.bot().getCustomGoalProcess().setGoalAndPath(
+            new baritone.api.pathing.goals.GoalNear(target.getX(),target.getY(),target.getZ(),2)),
+            w -> client.player.getEyePosition().distanceTo(Vec3.atCenterOf(target))<4.2);
+    }
+    boolean prepareStation(String item,int tick) {
+        BlockPos station=station(item);
+        if (station!=null) {
+            if (face(Vec3.atCenterOf(station)) && client.hitResult instanceof BlockHitResult hit
+                && hit.getBlockPos().equals(station) && tick%8==0) {
+                expectedMenu=item; openRequestAge=0; clickUse();
+            }
+            return false;
+        }
+        // Place a real workstation using the selected item and an ordinary right click.
+        var inv=client.player.getInventory();
+        int index=-1;
+        for (int i=0;i<inv.getNonEquipmentItems().size();i++)
+            if (!inv.getItem(i).isEmpty() && BuiltInRegistries.ITEM.getKey(inv.getItem(i).getItem()).toString().equals("minecraft:"+item)) { index=i;break; }
+        if (index<0) throw new IllegalStateException("Workstation unavailable: "+item);
+        if (index>=9) {
+            if (tick%4==0) click(client.player.inventoryMenu,index,8,ContainerInput.SWAP);
+            return false;
+        }
+        inv.setSelectedSlot(index);
+        BlockPos feet=client.player.blockPosition();
+        for (Direction direction:Direction.Plane.HORIZONTAL) {
+            BlockPos target=feet.relative(direction),floor=target.below();
+            if (!client.level.getBlockState(target).canBeReplaced()
+                || !client.level.getBlockState(floor).isFaceSturdy(client.level,floor,Direction.UP)
+                || !client.level.getBlockState(floor).getFluidState().isEmpty()) continue;
+            if (face(Vec3.atCenterOf(floor).add(0,0.5,0)) && client.hitResult instanceof BlockHitResult hit
+                && hit.getBlockPos().equals(floor) && hit.getDirection()==Direction.UP && tick%8==0) clickUse();
+            return false;
+        }
+        throw new IllegalStateException("No safe adjacent workstation placement site");
     }
 }

@@ -43,7 +43,7 @@ public final class ApexCraftClient implements ClientModInitializer {
             if (current==null || current.terminal() || current.status()==Task.Status.BLOCKED || paused) return;
             if (mc.player==null || mc.level==null || mc.level!=activeLevel) { stop(); return; }
             // GUI/focus changes always release controls; resumption is explicit.
-            if (mc.gui.screen()!=null || !mc.isWindowActive()) { scheduler.pause(); paused=true; return; }
+            if ((mc.gui.screen()!=null && !driver.ownsScreen()) || !mc.isWindowActive()) { scheduler.pause(); paused=true; return; }
             try {
                 Observation observation=driver.observe();
                 if (observation.health()<6 || observation.hunger()<6 || mc.player.isInWater()) {
@@ -75,7 +75,7 @@ public final class ApexCraftClient implements ClientModInitializer {
         stop(); scheduler.clearFinished();
         activeLevel=Minecraft.getInstance().level;
         current=new Task(++sequence+":"+description,action,event ->
-            LOG.info("task={} status={} reason={}",event.id(),event.status(),event.reason()),0,12000,0);
+            LOG.info("task={} status={} reason={}",event.id(),event.status(),event.reason()),0,144000,0);
         scheduler.submit(current); scheduler.resume();
     }
     private int command(String command) {
@@ -97,15 +97,25 @@ public final class ApexCraftClient implements ClientModInitializer {
             case "goto" -> {
                 if (words.length!=4) throw new IllegalArgumentException("Usage: /apex goto x y z");
                 var target=new Position(Integer.parseInt(words[1]),Integer.parseInt(words[2]),Integer.parseInt(words[3]));
-                if (!driver.traversable(target)) throw new IllegalArgumentException("Target is not observed walkable terrain");
-                submit(new MoveAction(driver,target),"goto "+target);
+                submit(driver.movement(target),"goto "+target);
             }
             case "collect" -> {
                 if (words.length!=3) throw new IllegalArgumentException("Usage: /apex collect minecraft:oak_log 8");
-                String item=words[1].contains(":")?words[1]:"minecraft:"+words[1];
-                submit(new CollectAction(driver,item,Integer.parseInt(words[2])),"collect "+item);
+                String item=ProgressionCatalog.canonical(words[1]);
+                submit(new ObjectiveAction(driver,item,Integer.parseInt(words[2])),"collect "+item);
             }
-            default -> throw new IllegalArgumentException("Available: goto, collect, stop, pause, resume, status, tasks, inventory, debug. Autonomous crafting is not integrated into this Fabric adapter yet.");
+            case "goal", "get", "craft" -> {
+                String text=command.substring(words[0].length()).trim().toLowerCase(Locale.ROOT).replace('.', ' ');
+                text=text.replaceFirst("^(get|obtain|collect|craft)\\s+", "").trim();
+                String[] goal=text.split("\\s+");
+                int amount=1;int first=0;
+                if (goal.length>1 && goal[0].matches("[0-9]+")) { amount=Integer.parseInt(goal[0]);first=1; }
+                String item=String.join("_",java.util.Arrays.copyOfRange(goal,first,goal.length));
+                if (item.equals("diamonds")) item="diamond";
+                item=ProgressionCatalog.canonical(item);
+                submit(new ObjectiveAction(driver,item,amount),"obtain "+amount+" "+item);
+            }
+            default -> throw new IllegalArgumentException("Available: goal/get, goto, collect, craft, stop, pause, resume, status, tasks, inventory, debug");
         }
         return reply(status());
     }

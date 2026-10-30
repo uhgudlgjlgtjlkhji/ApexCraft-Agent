@@ -13,7 +13,18 @@ loom {
         }
     }
 }
+repositories {
+    ivy {
+        url = uri('https://github.com/cabaletta/baritone/releases/download')
+        patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+        metadataSources { artifact() }
+        content { includeGroup 'baritone' }
+    }
+}
+configurations { baritoneDistribution }
 dependencies {
+    implementation 'baritone:baritone-unoptimized-fabric:1.20.0'
+    baritoneDistribution 'baritone:baritone-unoptimized-fabric:1.20.0'
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
@@ -42,3 +53,36 @@ tasks.register('coreTest', JavaExec) {
 }
 check.dependsOn coreTest
 jar { from('LICENSE') }
+
+tasks.register('copyBaritone', Copy) {
+    from configurations.baritoneDistribution
+    from 'third_party/baritone'
+    into layout.buildDirectory.dir('dependencies')
+
+}
+build.dependsOn copyBaritone
+
+// Development-only client tests are never packaged into the production mod.
+sourceSets {
+    clientTest {
+        compileClasspath += sourceSets.client.compileClasspath + sourceSets.main.output + sourceSets.client.output
+        runtimeClasspath += sourceSets.client.runtimeClasspath + sourceSets.main.output + sourceSets.client.output
+    }
+}
+dependencies {
+    clientTestImplementation fabricApi.module('fabric-client-gametest-api-v1', project.fabric_api_version)
+}
+loom {
+    mods {
+        apexcraft_test { sourceSet sourceSets.clientTest }
+    }
+    runs {
+        clientGametest {
+            inherit client
+            name 'ApexCraft Client Integration Tests'
+            vmArg '-Dfabric.client.gametest'
+            source sourceSets.clientTest
+            runDir 'build/client-gametest'
+        }
+    }
+}

@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "apexcraft_test",
+  "version": "1.0.0",
+  "name": "ApexCraft client integration tests",
+  "environment": "client",
+  "entrypoints": {"fabric-client-gametest": ["dev.apexcraft.client.ClientIntegrationTests"]}
+}

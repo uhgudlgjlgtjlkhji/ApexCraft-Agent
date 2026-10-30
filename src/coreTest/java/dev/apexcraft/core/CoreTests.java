@@ -69,6 +69,7 @@ public final class CoreTests {
         throwsError(IllegalStateException.class,stopper::stop);
         check(releases[0]==1 && sibling.status()==Task.Status.CANCELLED,"Stop releases despite cleanup failure");
         testPaths(); testRecipes(); testActions();
+        checks+=ProgressionTests.run();
         System.out.println("PASS: "+checks+" Java core checks");
     }
     private static void testPaths() {

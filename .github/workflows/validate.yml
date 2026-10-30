@@ -33,18 +33,19 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew --no-daemon --console=plain build 2>&1 | tee build-output.log
-      - name: Report compiler diagnostics
-        if: failure()
-        shell: python
+      - name: Install client test graphics dependencies
         run: |
-          from pathlib import Path
-          path = Path('build-output.log')
-          if path.exists():
-              tail = '\n'.join(path.read_text(errors='replace').splitlines()[-100:])
-              escaped = tail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
-              print('::error title=Fabric build diagnostics::' + escaped)
-              with open(__import__('os').environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
-                  summary.write('## Fabric build diagnostics\n\n```text\n' + tail + '\n```\n')
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgl1-mesa-dri mesa-vulkan-drivers
+      - name: Run real Minecraft client tests
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: 'true'
+        run: |
+          mkdir -p build/client-gametest
+          printf 'preferredGraphicsBackend:"opengl"\n' > build/client-gametest/options.txt
+          set -o pipefail
+          xvfb-run -a ./gradlew --no-daemon --console=plain runClientGametest 2>&1 | tee -a build-output.log
       - name: Verify packaged mod
         shell: python
         run: |
@@ -63,6 +64,13 @@ jobs:
           digest = hashlib.sha256(jar.read_bytes()).hexdigest()
           jar.with_suffix('.jar.sha256').write_text(digest + '  ' + jar.name + '\n')
           print(f'Verified {jar.name}: {digest}')
+          dependency = Path('build/dependencies/baritone-unoptimized-fabric-1.20.0.jar')
+          assert hashlib.sha256(dependency.read_bytes()).hexdigest() == '7836a235f37339897425ec303b5c0d7f3cf9d99dbdaa1952240b5099aafd8776'
+          with zipfile.ZipFile(dependency) as archive:
+              assert 'baritone/utils/BlockBreakHelper.class' in archive.namelist()
+          with zipfile.ZipFile(jar) as archive:
+              assert 'apexcraft.client.mixins.json' in archive.namelist()
+              assert 'dev/apexcraft/client/mixin/BaritoneMouseInputMixin.class' in archive.namelist()
       - name: Upload mod JAR
         uses: actions/upload-artifact@v4
         with:
@@ -71,8 +79,21 @@ jobs:
             build/libs/apexcraft-*.jar
             !build/libs/*-sources.jar
             build/libs/*.jar.sha256
+            build/dependencies/*
           if-no-files-found: error
           retention-days: 30
+      - name: Report compiler diagnostics
+        if: failure()
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('build-output.log')
+          if path.exists():
+              tail = '\n'.join(path.read_text(errors='replace').splitlines()[-100:])
+              escaped = tail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print('::error title=Fabric build diagnostics::' + escaped)
+              with open(__import__('os').environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+                  summary.write('## Fabric build diagnostics\n\n```text\n' + tail + '\n```\n')
       - name: Upload build diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
