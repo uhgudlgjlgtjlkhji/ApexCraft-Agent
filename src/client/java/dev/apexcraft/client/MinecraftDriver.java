@@ -108,7 +108,7 @@ public final class MinecraftDriver implements ObjectiveDriver {
         float pitch=(float)-Math.toDegrees(Math.atan2(delta.y,Math.hypot(delta.x,delta.z)));
         client.player.setYRot(LookSmoother.step(client.player.getYRot(),yaw,12,true));
         client.player.setXRot(LookSmoother.step(client.player.getXRot(),pitch,10,false));
-        double yawError=(yaw-client.player.getYRot()+540)%360-180;
+        double yawError=LookSmoother.difference(client.player.getYRot(),yaw,true);
         return Math.abs(yawError)<3 && Math.abs(pitch-client.player.getXRot())<3;
     }
     void clickUse() { KeyMapping.click(KeyMappingHelper.getBoundKeyOf(client.options.keyUse)); }
