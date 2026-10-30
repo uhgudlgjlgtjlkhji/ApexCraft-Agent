@@ -1,32 +1,34 @@
 # Roadmap and evidence
 
-The production target changed to a Fabric 26.3 client mod. The Python phases below
-are reference/simulation slices, not completed Minecraft features.
+The production target is a Fabric 26.3 client mod. Version 0.3.0 uses the official
+Baritone 1.20.0 unoptimized Fabric dependency and a scoped normal-mouse mining
+adapter. See [BARITONE.md](BARITONE.md) for installation, implementation and the
+successful two-trial real-client validation run.
 
-| Phase | Python reference | Java/Fabric target |
+| Phase | Current production scope | Remaining work |
 | --- | --- | --- |
-| 1 Foundation | Tested | Core compiled/tested; client compiled; lifecycle unvalidated in-game |
-| 2 Navigation | Flat-grid detours/recovery tested | Core tested; walking adapter compiled; in-game tests pending |
-| 3 Interaction | Finite-world mining/place/collect tested | Collect core tested; mining adapter compiled; in-game tests pending |
-| 4 Inventory/crafting | Ledger/recipes/equipment tested | Dependency resolver tested; live containers pending |
-| 5 Acquisition | Incremental finite sources tested | Nearby collect core tested; game integration pending |
-| 6 Autonomous planning | Stone/iron/diamond/armour goals tested | Not integrated |
-| 7 Survival | Food/escape/resume tested | Conservative pause compiled; unvalidated in-game |
-| 8 Memory | Atomic world-scoped checkpoint resume tested | Not integrated |
-| 9 Advanced goals | Declarative shelter and repair tested | Building, farming, Nether all pending |
-| 10 Optimization | No measured optimization committed | Pending live profiling |
+| 1 Foundation | Java verified tasks, scheduler, cancellation, startup/shutdown tested | Broader lifecycle scenarios |
+| 2 Navigation | Baritone routes/recovery; grass corridor tested in Minecraft | More terrain and hazard fixtures |
+| 3 Interaction | Mouse mining, workstation placement, normal GUI clicks tested | Generic building/interaction catalog |
+| 4 Inventory/crafting | Recursive wood/stone/iron tool chain and smelting tested | More recipes, equipment, storage, fuel choices |
+| 5 Acquisition | Incremental native mining and tool prerequisites tested | More resource strategies |
+| 6 Autonomous planning | Item/count goals; inventory-change replanning; empty-inventory diamond chain tested | Broader goal grammar and alternative-strategy memory |
+| 7 Survival | Conservative health/hunger/water pausing | Automatic food, escape, combat |
+| 8 Memory | Baritone spatial cache | Persistent objective checkpoints in the client |
+| 9 Advanced goals | Python shelter reference only | Client building, farming, Nether progression |
+| 10 Optimization | No live performance claims | Representative benchmarks and measured optimization |
 
-**Build status:** GitHub Actions successfully compiles the Fabric mod and uploads
-a development JAR. Local cloud dependency downloads are still denied by network
-policy. Next: in-game walking/collection/cancellation tests, then live crafting and
-planner integration. Compilation does not complete the broader autonomous-agent goal.
+The Python package remains a separate algorithm/reference simulation. Passing those
+tests is not proof of Minecraft behavior. The Java client suite now exercises real
+Minecraft and server inventory state. Its two trials passed in GitHub run
+41014988485; this is controlled-fixture validation, not a random-world success rate.
 
-Each further slice must compile, run meaningful tests, handle failure and
-cancellation, receive diff review, and be committed independently. Existing
-simulation tests remain regression references while porting to Java.
+Local cloud Fabric downloads remain denied by network policy. GitHub Actions builds
+and tests the mod and uploads the package. New implementation slices must compile,
+pass meaningful regressions and client tests, receive diff review, and be committed.
 
-Final acceptance remains a real Minecraft fresh spawn → full iron armour equipped,
-with verified acquisition, crafting, smelting, recovery and survival. Benchmark
-A–E (stone pickaxe, iron pickaxe, full armour, diamond, safe shelter) must report
-completion rate/time, path time, replans, stuck events, excess travel/resources,
-and deaths on pinned worlds and versions. No live performance claims exist yet.
+The broader project acceptance target still includes full iron armour from a real
+fresh spawn, building/farming/Nether goals, survival and durable checkpoints. Those
+features are not claimed by the current diamond-progression release. Benchmark A–E
+objectives should report completion/time, path time, replans, stuck events, excess
+travel/resources and deaths on pinned worlds once the relevant scenarios exist.

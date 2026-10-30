@@ -2,8 +2,9 @@
 
 ApexCraft is now a Java 25 / Fabric 26.3 client mod. See [FABRIC.md](FABRIC.md)
 for layout, authoritative version evidence, build blockers and validation boundaries.
-The Java core mirrors the verified-action architecture described below. The Fabric
-adapter compiles on GitHub Actions; in-game behavior is not yet validated. The following design text documents the original
+The Java core mirrors the verified-action architecture described below. In 0.3.0,
+production movement/mining use Baritone, and crafting/smelting use real menus.
+See [BARITONE.md](BARITONE.md) for the client regression suite and scope. The following design text documents the original
 Python reference runtime; it is not a claim that those capabilities exist in-game.
 
 # Architecture

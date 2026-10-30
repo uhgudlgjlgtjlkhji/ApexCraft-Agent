@@ -5,9 +5,12 @@ A Fabric **client mod** targeting Minecraft **26.3**, Java **25**, Fabric Loader
 on servers where automation is permitted. No separate bot account or external
 Python process is required by the mod.
 
-**Development status: Baritone-based 0.3.0 is under client integration testing.**
+**Development status: tested Baritone-based 0.3.0 development build.**
 ApexCraft now delegates mining and navigation to the official Baritone 1.20.0
-Fabric release. Its scoped mining adapter uses normal mouse-button input instead
+Fabric release. Two complete Minecraft client-test runs passed, including the
+empty-inventory → diamond chain and delayed inventory deliveries.
+[Validated build and download](https://github.com/uhgudlgjlgtjlkhji/ApexCraft-Agent/actions/runs/41014988485).
+Its scoped mining adapter uses normal mouse-button input instead
 of Baritone's direct block-breaking helper. The objective planner obtains an iron
 pickaxe when needed before collecting diamonds. See [the 0.3.0 design and validation
 notes](docs/BARITONE.md) for the exact scope and test boundaries.

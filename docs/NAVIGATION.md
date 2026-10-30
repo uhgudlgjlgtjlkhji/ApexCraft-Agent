@@ -1,3 +1,13 @@
+# Production navigation in 0.3.0
+
+Production routes and terrain handling now come from the official Baritone 1.20.0
+Fabric release. This includes short/tall grass collision handling, height changes,
+obstacles and path recovery. ApexCraft replaces block breaking with normal mouse
+input while its process is active. See [BARITONE.md](BARITONE.md).
+
+The remaining text is the earlier standalone navigation design/reference; it is
+not a second pathfinder competing with Baritone in the live client.
+
 # Navigation design and validation boundary
 
 Python now has a tested flat-grid implementation. Java core search/movement tests

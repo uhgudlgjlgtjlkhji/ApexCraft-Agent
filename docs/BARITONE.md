@@ -75,3 +75,23 @@ of a pass. A full fresh-world diamond journey is not yet a benchmarked claim.
 The shutdown regression test also requires Minecraft/Gradle to exit normally.
 The upstream cache workers are stopped after Minecraft closes its worlds; passing
 gameplay assertions alone does not excuse a shutdown watchdog failure.
+
+## Verified 0.3.0 result
+
+GitHub Actions run [41014988485](https://github.com/uhgudlgjlgtjlkhji/ApexCraft-Agent/actions/runs/41014988485)
+passed the complete build, 163 explicit Java core checks, 53 Python reference tests,
+and two separate real Minecraft client-test runs. Each run passed grass walking,
+normal mouse mining, delayed-inventory revalidation, smelting/crafting a missing
+iron pickaxe before diamond mining, an empty-inventory-to-diamond resource chain,
+input cleanup, and clean client shutdown. The artifact includes both required JARs,
+checksums, and Baritone's license/corresponding source.
+
+Regressions fixed during live validation: obsolete resource collection after inventory
+updates; plant selection outlines blocking workstation clicks while standing in
+non-solid grass; yaw alignment after multiple full turns; and upstream background
+workers keeping the client alive during shutdown. Walking still leaves grass intact;
+only vegetation actually obstructing an intended workstation interaction is cleared,
+through normal mouse input.
+
+These are controlled, finite-resource test worlds. They do not establish a success
+rate across arbitrary survival seeds, multiplayer plugins, or anti-cheat systems.

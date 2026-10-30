@@ -1,3 +1,11 @@
+# Current 0.3.0 integration
+
+The client now depends on the supplied Baritone 1.20.0 unoptimized Fabric JAR.
+See [BARITONE.md](BARITONE.md) for current installation, commands, normal-mouse
+mining, resource progression and client-test coverage. The historical notes below
+describe the original 0.2.0 adapter and the initial cloud-network build limitation.
+They are not the feature list for the Baritone-based client.
+
 # Fabric 26.3 migration and build status
 
 The user's implementation target is a Fabric client mod for the current 26.x

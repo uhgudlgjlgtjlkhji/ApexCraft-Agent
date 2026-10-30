@@ -1,3 +1,15 @@
+# Current production orchestration
+
+The Java scheduler executes an ObjectiveAction which requests one resource,
+crafting or smelting action at a time. After each observed result it resolves the
+remaining recipe dependencies again. Collection also revalidates its prerequisite
+plan on inventory changes; newly received tools or materials can cancel obsolete
+acquisition immediately. In-flight crafting/smelting reservations are not treated
+as missing inventory while their GUI transactions are underway.
+
+The following text documents the original Python task-tree reference. The Java
+Task/Scheduler retain the same verified-result and cancellation principles.
+
 # Task system
 
 A Task owns one injected Action and zero or more prerequisite child Tasks. A parent

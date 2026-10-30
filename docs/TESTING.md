@@ -1,3 +1,15 @@
+# Validated 0.3.0 checks
+
+GitHub run [41014988485](https://github.com/uhgudlgjlgtjlkhji/ApexCraft-Agent/actions/runs/41014988485)
+passed compilation, packaging/dependency checksum verification, 163 Java core checks,
+53 Python reference tests and two complete Minecraft client integration runs.
+The client cases include delayed inventory updates, short/tall grass, mouse mining,
+real workstation placement and menus, full empty-inventory diamond progression,
+input cleanup and clean shutdown. Tests use controlled, visible resources; no random
+survival-world completion rate or multiplayer anti-cheat compatibility is claimed.
+
+The sections below retain the earlier build history and reference-test methodology.
+
 # Current validation boundary
 
 Java 25 standalone core: `scripts/test-java-core.sh` (36 explicit checks, no game
