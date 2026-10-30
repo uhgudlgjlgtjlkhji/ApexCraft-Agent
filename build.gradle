@@ -86,3 +86,18 @@ loom {
         }
     }
 }
+
+abstract class VerifyBaritoneDependency extends DefaultTask {
+    @InputFile abstract RegularFileProperty getArtifact()
+    @TaskAction void verify() {
+        def digest=java.security.MessageDigest.getInstance('SHA-256')
+            .digest(artifact.get().asFile.bytes).encodeHex().toString()
+        if (digest!='7836a235f37339897425ec303b5c0d7f3cf9d99dbdaa1952240b5099aafd8776')
+            throw new GradleException('Official Baritone artifact checksum mismatch')
+    }
+}
+tasks.register('verifyBaritoneDependency', VerifyBaritoneDependency) {
+    dependsOn copyBaritone
+    artifact=layout.buildDirectory.file('dependencies/baritone-unoptimized-fabric-1.20.0.jar')
+}
+compileClientJava.dependsOn verifyBaritoneDependency

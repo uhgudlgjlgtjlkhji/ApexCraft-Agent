@@ -12,7 +12,7 @@ public final class ClientIntegrationTests implements FabricClientGameTest {
     public void runTest(ClientGameTestContext context) {
         try (var singleplayer=context.worldBuilder().create()) {
             var server=singleplayer.getServer();
-            server.runCommand("fill -8 80 -8 12 80 8 minecraft:stone");
+            server.runCommand("fill -8 80 -8 12 80 8 minecraft:grass_block");
             server.runCommand("fill -8 81 -8 12 85 8 minecraft:air");
             server.runCommand("fill -1 81 -1 8 83 -1 minecraft:glass");
             server.runCommand("fill -1 81 1 8 83 1 minecraft:glass");
@@ -22,7 +22,7 @@ public final class ClientIntegrationTests implements FabricClientGameTest {
             server.runCommand("tp @p 0.5 81 0.5");
             server.runCommand("gamemode survival @p");
             context.waitFor(mc -> mc.player!=null && mc.player.blockPosition().equals(new BlockPos(0,81,0))
-                && mc.level.getBlockState(new BlockPos(0,80,0)).is(Blocks.STONE));
+                && mc.level.getBlockState(new BlockPos(0,80,0)).is(Blocks.GRASS_BLOCK));
             context.waitTicks(20);
             MinecraftDriver driver=context.computeOnClient(MinecraftDriver::new);
             Action movement=context.computeOnClient(mc -> driver.movement(new Position(4,81,0)));

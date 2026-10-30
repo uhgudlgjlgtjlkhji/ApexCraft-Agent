@@ -14,7 +14,10 @@ public final class MouseMiningInput {
     private MouseMiningInput() {}
     public static boolean owned() { return owned; }
     public static void own(boolean value) {
-        if (!value) set(false);
+        if (!value) {
+            set(false);
+            while (Minecraft.getInstance().options.keyAttack.consumeClick()) { /* discard this task's queued press */ }
+        }
         owned=value;
     }
     public static void set(boolean requested) {

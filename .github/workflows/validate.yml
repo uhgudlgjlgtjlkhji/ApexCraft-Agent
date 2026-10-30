@@ -46,6 +46,10 @@ jobs:
           printf 'preferredGraphicsBackend:"opengl"\n' > build/client-gametest/options.txt
           set -o pipefail
           xvfb-run -a ./gradlew --no-daemon --console=plain runClientGametest 2>&1 | tee -a build-output.log
+      - name: Include Baritone corresponding source
+        run: |
+          curl --fail --location --retry 3 https://github.com/cabaletta/baritone/archive/refs/tags/v1.20.0.tar.gz -o build/dependencies/baritone-source-v1.20.0.tar.gz
+          echo 'bd2fd8b8e4e7c9863565048516ae0cd57ed9974052ce6833aacd781873cdeda7  build/dependencies/baritone-source-v1.20.0.tar.gz' | sha256sum --check
       - name: Verify packaged mod
         shell: python
         run: |

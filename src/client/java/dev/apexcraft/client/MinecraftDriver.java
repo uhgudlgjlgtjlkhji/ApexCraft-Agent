@@ -66,6 +66,7 @@ public final class MinecraftDriver implements ObjectiveDriver {
         client.options.keyLeft.setDown(false); client.options.keyRight.setDown(false);
         client.options.keyJump.setDown(false); client.options.keySprint.setDown(false);
         client.options.keyUse.setDown(false);
+        while (client.options.keyUse.consumeClick()) { /* no queued placement after cancellation */ }
     }
     public boolean ownsScreen() {
         Object screen=client.gui.screen();
@@ -126,7 +127,7 @@ public final class MinecraftDriver implements ObjectiveDriver {
     }
     Action nearStation(BlockPos target) {
         return new BaritoneAction(session,s -> s.bot().getCustomGoalProcess().setGoalAndPath(
-            new baritone.api.pathing.goals.GoalNear(target.getX(),target.getY(),target.getZ(),2)),
+            new baritone.api.pathing.goals.GoalNear(target,2)),
             w -> client.player.getEyePosition().distanceTo(Vec3.atCenterOf(target))<4.2);
     }
     boolean prepareStation(String item,int tick) {
